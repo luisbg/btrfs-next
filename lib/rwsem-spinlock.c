@@ -294,3 +294,19 @@ void __downgrade_write(struct rw_semaphore *sem)
 	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
 }
 
+/*
+ * check if the rwsem has any waiters on the current lock
+ */
+int rwsem_is_contended(struct rw_semaphore *sem)
+{
+	int ret = 0;
+	unsigned long flags;
+
+	if (!raw_spin_trylock_irqsave(&sem->wait_lock, flags))
+		return 1;
+	if (!list_empty(&sem->wait_list))
+		ret = 1;
+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+	return ret;
+}
+EXPORT_SYMBOL(rwsem_is_contended);

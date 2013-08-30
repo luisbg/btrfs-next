@@ -287,6 +287,23 @@ struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
 	return sem;
 }
 
+/*
+ * check to see if the rwsem we're holding has anybody waiting to acquire it.
+ */
+int rwsem_is_contended(struct rw_semaphore *sem)
+{
+	int ret = 0;
+	unsigned long flags;
+
+	if (!raw_spin_trylock_irqsave(&sem->wait_lock, flags))
+		return 1;
+	if (!list_empty(&sem->wait_list))
+		ret = 1;
+	raw_spin_unlock_irqrestore(&sem->wait_lock, flags);
+	return ret;
+}
+EXPORT_SYMBOL(rwsem_is_contended);
+
 EXPORT_SYMBOL(rwsem_down_read_failed);
 EXPORT_SYMBOL(rwsem_down_write_failed);
 EXPORT_SYMBOL(rwsem_wake);
